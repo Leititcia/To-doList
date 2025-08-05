@@ -149,25 +149,6 @@ this.taskList.addEventListener('click', (e) => this.handleTaskListClick(e));
 - **Mobile:** Layout empilhado e botões maiores
 - **Paginação:** Botões menores em telas pequenas
 
-## 🛠️ Desenvolvimento
-
-### **Para contribuir:**
-1. Faça um fork do repositório
-2. Crie uma branch para sua feature
-3. Implemente suas mudanças
-4. Execute `npm run build` para verificar erros
-5. Faça commit das mudanças
-6. Abra um Pull Request
-
-### **Estrutura de Classes:**
-- **`TaskUI`** - Gerencia interface e eventos DOM
-- **`TaskStorage`** - Gerencia persistência de dados
-- **`TodoApp`** - Orquestra a aplicação
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT.
-
 ---
 
 **Desenvolvido com TypeScript, manipulação de DOM e transpilação usando `tsc`.** 
