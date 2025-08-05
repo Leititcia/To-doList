@@ -1,0 +1,18 @@
+{
+  "name": "lista-tarefas-typescript",
+  "version": "1.0.0",
+  "description": "Aplicação básica de lista de tarefas em TypeScript",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "live-server"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "live-server": "^1.2.2"
+  },
+  "keywords": ["typescript", "tarefas", "lista"],
+  "author": "",
+  "license": "MIT"
+} 
