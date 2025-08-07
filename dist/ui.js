@@ -104,13 +104,15 @@ export class TaskUI {
         // Botão Salvar
         const saveBtn = document.createElement('button');
         saveBtn.className = 'btn btn-save';
-        saveBtn.innerHTML = '<i class="bi bi-check-circle"></i> Salvar';
+        saveBtn.innerHTML = '<i class="bi bi-check-circle"></i>';
         saveBtn.setAttribute('type', 'button');
+        saveBtn.title = 'Salvar';
         // Botão Cancelar
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'btn btn-cancel';
-        cancelBtn.innerHTML = '<i class="bi bi-x-circle"></i> Cancelar';
+        cancelBtn.innerHTML = '<i class="bi bi-x-circle"></i>';
         cancelBtn.setAttribute('type', 'button');
+        cancelBtn.title = 'Cancelar';
         buttonContainer.appendChild(saveBtn);
         buttonContainer.appendChild(cancelBtn);
         editContainer.appendChild(titleInput);
@@ -138,7 +140,7 @@ export class TaskUI {
             }
             // Adicionar estado de loading
             saveBtn.classList.add('loading');
-            saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
+            saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
             saveBtn.disabled = true;
             // Simular delay para feedback visual
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -184,27 +186,6 @@ export class TaskUI {
                 titleInput.style.borderColor = '#ff69b4';
                 titleInput.style.boxShadow = '0 0 0 0.2rem rgba(255, 105, 180, 0.25)';
             }
-        });
-        // Eventos de hover para os botões
-        saveBtn.addEventListener('mouseenter', () => {
-            if (!saveBtn.disabled) {
-                saveBtn.style.transform = 'translateY(-2px) scale(1.05)';
-                saveBtn.style.boxShadow = '0 8px 25px rgba(40, 167, 69, 0.4)';
-            }
-        });
-        saveBtn.addEventListener('mouseleave', () => {
-            if (!saveBtn.disabled) {
-                saveBtn.style.transform = 'translateY(0) scale(1)';
-                saveBtn.style.boxShadow = '0 4px 15px rgba(40, 167, 69, 0.3)';
-            }
-        });
-        cancelBtn.addEventListener('mouseenter', () => {
-            cancelBtn.style.transform = 'translateY(-2px) scale(1.05)';
-            cancelBtn.style.boxShadow = '0 8px 25px rgba(108, 117, 125, 0.4)';
-        });
-        cancelBtn.addEventListener('mouseleave', () => {
-            cancelBtn.style.transform = 'translateY(0) scale(1)';
-            cancelBtn.style.boxShadow = '0 4px 15px rgba(108, 117, 125, 0.3)';
         });
     }
     stopEditing() {
@@ -348,9 +329,9 @@ export class TaskUI {
                     <button class="edit-btn" data-task-id="${task.id}" title="Editar tarefa">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="delete-btn" data-task-id="${task.id}" title="Excluir tarefa">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                <button class="delete-btn" data-task-id="${task.id}" title="Excluir tarefa">
+                    <i class="bi bi-trash"></i>
+                </button>
                 </div>
             </li>
         `;
