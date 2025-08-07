@@ -2,6 +2,8 @@
 
 Aplicação de lista de tarefas desenvolvida em TypeScript puro.
 
+<img width="530" height="867" alt="Image" src="https://github.com/user-attachments/assets/a473adff-1fb0-4209-83b4-98fd947b094d" />
+
 ## Funcionalidades
 
 ### **Funcionalidades Básicas:**
@@ -57,128 +59,104 @@ export interface Task {
 
 ### **2. Classe TaskStorage (src/storage.ts):**
 Responsável pelo gerenciamento de dados no localStorage:
+
+**Recuperar tarefas:**
 ```typescript
-export class TaskStorage {
-    private static STORAGE_KEY = 'todo_tasks';
-    
-    static getAllTasks(): Task[] {
-        const stored = localStorage.getItem(this.STORAGE_KEY);
-        return stored ? JSON.parse(stored) : [];
-    }
-    
-    static addTask(title: string, description: string): Task {
-        const tasks = this.getAllTasks();
-        const newTask: Task = {
-            id: crypto.randomUUID(),
-            title,
-            description,
-            completed: false,
-            createdAt: new Date()
-        };
-        tasks.unshift(newTask);
-        this.saveTasks(tasks);
-        return newTask;
-    }
-    
-    static deleteTask(taskId: string): boolean {
-        const tasks = this.getAllTasks();
-        const filteredTasks = tasks.filter(task => task.id !== taskId);
-        if (filteredTasks.length !== tasks.length) {
-            this.saveTasks(filteredTasks);
-            return true;
-        }
-        return false;
-    }
+static getAllTasks(): Task[] {
+    const stored = localStorage.getItem(this.STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+}
+```
+
+**Adicionar nova tarefa:**
+```typescript
+static addTask(title: string, description: string): Task {
+    const newTask: Task = {
+        id: crypto.randomUUID(),
+        title, description,
+        completed: false,
+        createdAt: new Date()
+    };
+    tasks.unshift(newTask); // Adiciona no topo
+    return newTask;
+}
+```
+
+**Excluir tarefa:**
+```typescript
+static deleteTask(taskId: string): boolean {
+    const filteredTasks = tasks.filter(task => task.id !== taskId);
+    this.saveTasks(filteredTasks);
+    return true;
 }
 ```
 
 ### **3. Classe TaskUI (src/ui.ts):**
 Gerencia a interface do usuário e interações:
+
+**Renderizar lista de tarefas:**
 ```typescript
-export class TaskUI {
-    private taskList!: HTMLElement;
-    private currentPage: number = 1;
-    private tasksPerPage: number = 5;
+renderTasks(tasks: Task[]): void {
+    const startIndex = (this.currentPage - 1) * this.tasksPerPage;
+    const currentTasks = tasks.slice(startIndex, endIndex);
+    this.taskList.innerHTML = currentTasks.map(task => this.createTaskElement(task)).join('');
+}
+```
 
-    constructor() {
-        this.initializeElements();
-        this.bindEvents();
-    }
+**Criar elemento de tarefa:**
+```typescript
+private createTaskElement(task: Task): string {
+    return `
+        <li class="task-item ${task.completed ? 'completed' : ''}">
+            <input type="checkbox" ${task.completed ? 'checked' : ''}>
+            <span class="task-title">${task.title}</span>
+            <button class="edit-btn" data-task-id="${task.id}">
+                <i class="bi bi-pencil"></i>
+            </button>
+            <button class="delete-btn" data-task-id="${task.id}">
+                <i class="bi bi-trash"></i>
+            </button>
+        </li>
+    `;
+}
+```
 
-    renderTasks(tasks: Task[]): void {
-        if (tasks.length === 0) {
-            this.taskList.innerHTML = `
-                <div class="empty-state">
-                    <h3><i class="bi bi-list-check"></i> Nenhuma tarefa encontrada</h3>
-                </div>
-            `;
-            return;
-        }
-
-        // Paginação
-        const startIndex = (this.currentPage - 1) * this.tasksPerPage;
-        const endIndex = startIndex + this.tasksPerPage;
-        const currentTasks = tasks.slice(startIndex, endIndex);
-
-        this.taskList.innerHTML = currentTasks.map(task => this.createTaskElement(task)).join('');
-    }
-
-    private createTaskElement(task: Task): string {
-        return `
-            <li class="task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
-                <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
-                <div class="task-content">
-                    <span class="task-title">${this.escapeHtml(task.title)}</span>
-                    <div class="task-description">${this.escapeHtml(task.description)}</div>
-                </div>
-                <div class="task-actions">
-                    <button class="edit-btn" data-task-id="${task.id}">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="delete-btn" data-task-id="${task.id}">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </li>
-        `;
-    }
+**Atualizar contador:**
+```typescript
+updatePendingCount(count: number): void {
+    this.pendingCount.innerHTML = `Tarefas pendentes: ${count}`;
 }
 ```
 
 ### **4. Classe TodoApp (src/app.ts):**
 Orquestra toda a aplicação e coordena as classes:
+
+**Adicionar tarefa:**
 ```typescript
-export class TodoApp {
-    private ui: TaskUI;
-    private tasks: Task[] = [];
+private addTask(title: string, description: string): void {
+    if (!title.trim()) return;
+    const newTask = TaskStorage.addTask(title, description);
+    this.tasks.unshift(newTask); // Adiciona no topo
+    this.render();
+}
+```
 
-    constructor() {
-        this.ui = new TaskUI();
-        this.loadTasks();
-        this.bindEvents();
+**Excluir tarefa:**
+```typescript
+private deleteTask(taskId: string): void {
+    const deleted = TaskStorage.deleteTask(taskId);
+    if (deleted) {
+        this.tasks = this.tasks.filter(task => task.id !== taskId);
         this.render();
     }
+}
+```
 
-    private addTask(title: string, description: string): void {
-        if (!title.trim()) return;
-        
-        const newTask = TaskStorage.addTask(title, description);
-        this.tasks.unshift(newTask); // Adiciona no topo
-        this.render();
-    }
-
-    private deleteTask(taskId: string): void {
-        const deleted = TaskStorage.deleteTask(taskId);
-        if (deleted) {
-            this.tasks = this.tasks.filter(task => task.id !== taskId);
-            this.render();
-        }
-    }
-
-    private render(): void {
-        this.ui.renderTasks(this.tasks);
-        this.ui.updatePendingCount(this.getPendingCount());
-    }
+**Renderizar interface:**
+```typescript
+private render(): void {
+    this.ui.renderTasks(this.tasks);
+    this.ui.updatePendingCount(this.getPendingCount());
 }
 ```
 
@@ -197,69 +175,63 @@ document.dispatchEvent(new CustomEvent('deleteTask', {
 ### **6. Funcionalidades Avançadas:**
 
 #### **🔄 Edição Inline:**
+**Criar campos de edição:**
 ```typescript
-// src/ui.ts - Início da edição inline
-private startEditing(taskId: string, currentTitle: string, currentDescription: string): void {
-    // Criar campos de edição dinamicamente
-    const titleInput = document.createElement('input');
-    titleInput.value = currentTitle;
-    titleInput.placeholder = 'Título da tarefa';
-    
-    const descriptionTextarea = document.createElement('textarea');
-    descriptionTextarea.value = currentDescription;
-    descriptionTextarea.placeholder = 'Descrição da tarefa (opcional)';
-    
-    // Validação em tempo real
-    titleInput.addEventListener('input', () => {
-        if (titleInput.value.trim()) {
-            titleInput.style.borderColor = '#ff69b4';
-        } else {
-            titleInput.style.borderColor = '#dc3545';
-        }
-    });
-}
+const titleInput = document.createElement('input');
+titleInput.value = currentTitle;
+titleInput.placeholder = 'Título da tarefa';
+
+const descriptionTextarea = document.createElement('textarea');
+descriptionTextarea.value = currentDescription;
+```
+
+**Validação em tempo real:**
+```typescript
+titleInput.addEventListener('input', () => {
+    if (titleInput.value.trim()) {
+        titleInput.style.borderColor = '#ff69b4';
+    } else {
+        titleInput.style.borderColor = '#dc3545';
+    }
+});
 ```
 
 #### **📄 Paginação Inteligente:**
+**Calcular páginas:**
 ```typescript
-// src/ui.ts - Sistema de paginação
-private renderPagination(totalPages: number): void {
-    const startIndex = (this.currentPage - 1) * this.tasksPerPage;
-    const endIndex = startIndex + this.tasksPerPage;
-    const currentTasks = tasks.slice(startIndex, endIndex);
-    
-    // Renderizar botões de navegação
-    let paginationHTML = '';
-    for (let i = startPage; i <= endPage; i++) {
-        const active = i === this.currentPage ? 'active' : '';
-        paginationHTML += `
-            <li class="page-item ${active}">
-                <a class="page-link" href="#" data-page="${i}">${i}</a>
-            </li>
-        `;
-    }
+const startIndex = (this.currentPage - 1) * this.tasksPerPage;
+const endIndex = startIndex + this.tasksPerPage;
+const currentTasks = tasks.slice(startIndex, endIndex);
+```
+
+**Criar botões de navegação:**
+```typescript
+for (let i = startPage; i <= endPage; i++) {
+    const active = i === this.currentPage ? 'active' : '';
+    paginationHTML += `
+        <li class="page-item ${active}">
+            <a class="page-link" href="#" data-page="${i}">${i}</a>
+        </li>
+    `;
 }
 ```
 
 #### **⚡ Validação em Tempo Real:**
+**Verificar campo obrigatório:**
 ```typescript
-// src/ui.ts - Validação durante edição
-const handleSave = async () => {
-    const newTitle = titleInput.value.trim();
-    
-    if (!newTitle) {
-        // Destacar campo vazio
-        titleInput.style.borderColor = '#dc3545';
-        titleInput.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
-        titleInput.focus();
-        return;
-    }
-    
-    // Feedback visual de loading
-    saveBtn.classList.add('loading');
-    saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
-    saveBtn.disabled = true;
-};
+if (!newTitle) {
+    titleInput.style.borderColor = '#dc3545';
+    titleInput.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
+    titleInput.focus();
+    return;
+}
+```
+
+**Feedback de loading:**
+```typescript
+saveBtn.classList.add('loading');
+saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+saveBtn.disabled = true;
 ```
 
 #### **🎨 Animações e Transições:**
@@ -297,53 +269,49 @@ const handleSave = async () => {
 ```
 
 #### **💾 Persistência Inteligente:**
+**Salvar no localStorage:**
 ```typescript
-// src/storage.ts - Gerenciamento de localStorage
-export class TaskStorage {
-    private static STORAGE_KEY = 'todo_tasks';
-    
-    static getAllTasks(): Task[] {
-        const stored = localStorage.getItem(this.STORAGE_KEY);
-        return stored ? JSON.parse(stored) : [];
-    }
-    
-    static saveTasks(tasks: Task[]): void {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tasks));
-    }
-    
-    static addTask(title: string, description: string): Task {
-        const tasks = this.getAllTasks();
-        const newTask: Task = {
-            id: crypto.randomUUID(),
-            title,
-            description,
-            completed: false,
-            createdAt: new Date()
-        };
-        
-        tasks.unshift(newTask); // Adiciona no topo
-        this.saveTasks(tasks);
-        return newTask;
-    }
+static saveTasks(tasks: Task[]): void {
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tasks));
 }
 ```
 
-#### **🔄 Sistema de Eventos Personalizados:**
+**Recuperar do localStorage:**
 ```typescript
-// src/app.ts - Comunicação entre componentes
-private bindEvents(): void {
-    document.addEventListener('addTask', ((e: CustomEvent) => {
-        this.addTask(e.detail.title, e.detail.description);
-    }) as EventListener);
-    
-    document.addEventListener('deleteTask', ((e: CustomEvent) => {
-        this.deleteTask(e.detail.taskId);
-    }) as EventListener);
-    
-    document.addEventListener('editTask', ((e: CustomEvent) => {
-        this.editTask(e.detail.taskId, e.detail.title, e.detail.description);
-    }) as EventListener);
+static getAllTasks(): Task[] {
+    const stored = localStorage.getItem(this.STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
 }
+```
+
+**Criar nova tarefa:**
+```typescript
+const newTask: Task = {
+    id: crypto.randomUUID(),
+    title, description,
+    completed: false,
+    createdAt: new Date()
+};
+tasks.unshift(newTask); // Adiciona no topo
+```
+
+#### **🔄 Sistema de Eventos Personalizados:**
+**Escutar eventos:**
+```typescript
+document.addEventListener('addTask', ((e: CustomEvent) => {
+    this.addTask(e.detail.title, e.detail.description);
+}) as EventListener);
+```
+
+**Disparar eventos:**
+```typescript
+document.dispatchEvent(new CustomEvent('addTask', { 
+    detail: { title, description } 
+}));
+
+document.dispatchEvent(new CustomEvent('deleteTask', { 
+    detail: { taskId } 
+}));
 ```
 
 ## Como executar
