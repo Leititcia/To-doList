@@ -31,18 +31,12 @@ export class TaskUI {
         // Delegação de eventos para a lista de tarefas
         this.taskList.addEventListener('click', (e) => this.handleTaskListClick(e));
         this.taskList.addEventListener('change', (e) => this.handleTaskListChange(e));
-        this.taskList.addEventListener('dblclick', (e) => this.handleTaskListDoubleClick(e));
         // Evento de confirmação de exclusão
         this.confirmDeleteBtn.addEventListener('click', () => this.handleConfirmDelete());
         // Evento de paginação
         this.pagination.addEventListener('click', (e) => this.handlePaginationClick(e));
         // Eventos de teclado para edição
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
-        // Teste: adicionar listener direto para verificar se funciona
-        console.log('Eventos vinculados. Testando captura de eventos...');
-        this.taskList.addEventListener('dblclick', (e) => {
-            console.log('Double click capturado no taskList:', e.target);
-        });
     }
     handleAddTask() {
         const title = this.taskTitle.value.trim();
@@ -57,6 +51,18 @@ export class TaskUI {
     }
     handleTaskListClick(e) {
         const target = e.target;
+        // Verificar se clicou no botão de editar
+        const editBtn = target.closest('.edit-btn');
+        if (editBtn) {
+            e.preventDefault();
+            const taskId = editBtn.getAttribute('data-task-id');
+            const taskItem = editBtn.closest('.task-item');
+            const taskTitle = taskItem.querySelector('.task-title');
+            const currentTitle = taskTitle.textContent || '';
+            const currentDescription = taskItem.querySelector('.task-description')?.textContent || '';
+            this.startEditing(taskId, currentTitle, currentDescription, taskTitle);
+            return;
+        }
         // Verificar se clicou no botão de deletar ou no ícone
         const deleteBtn = target.closest('.delete-btn');
         if (deleteBtn) {
@@ -66,108 +72,77 @@ export class TaskUI {
             this.showDeleteConfirmation(taskId, taskTitle);
         }
     }
-    handleTaskListDoubleClick(e) {
-        const target = e.target;
-        console.log('Double click detectado em:', target);
-        console.log('Target classList:', target.classList);
-        const taskTitle = target.closest('.task-title');
-        const taskDescription = target.closest('.task-description');
-        console.log('taskTitle encontrado:', !!taskTitle);
-        console.log('taskDescription encontrado:', !!taskDescription);
-        // Verificar se clicou em algum elemento editável
-        if ((taskTitle || taskDescription) && !this.editingTaskId) {
-            const taskItem = (taskTitle || taskDescription)?.closest('.task-item');
-            if (!taskItem) {
-                console.log('taskItem não encontrado');
-                return;
-            }
-            const taskId = taskItem.getAttribute('data-task-id');
-            const currentTitle = taskItem.querySelector('.task-title')?.textContent || '';
-            const currentDescription = taskItem.querySelector('.task-description')?.textContent || '';
-            console.log('Iniciando edição:', { taskId, currentTitle, currentDescription });
-            this.startEditing(taskId, currentTitle, currentDescription, taskItem);
-        }
-        else {
-            console.log('Condições não atendidas:', {
-                hasTitle: !!taskTitle,
-                hasDescription: !!taskDescription,
-                editingTaskId: this.editingTaskId
-            });
-        }
-    }
-    startEditing(taskId, currentTitle, currentDescription, taskItem) {
-        console.log('startEditing chamado:', { taskId, currentTitle, currentDescription });
+    startEditing(taskId, currentTitle, currentDescription, titleElement) {
         this.editingTaskId = taskId;
-        const titleElement = taskItem.querySelector('.task-title');
+        const taskItem = titleElement.closest('.task-item');
         const descriptionElement = taskItem.querySelector('.task-description');
-        const taskContent = taskItem.querySelector('.task-content');
-        console.log('Elementos encontrados:', {
-            titleElement: !!titleElement,
-            descriptionElement: !!descriptionElement,
-            taskContent: !!taskContent
-        });
+        // Adicionar classe de edição ao item
+        taskItem.classList.add('editing');
         // Criar container de edição
         const editContainer = document.createElement('div');
         editContainer.className = 'edit-container';
-        editContainer.style.cssText = `
-            flex: 1;
-            margin-right: 0.5rem;
-        `;
         // Criar input de título
         const titleInput = document.createElement('input');
         titleInput.type = 'text';
         titleInput.className = 'edit-title-input';
         titleInput.value = currentTitle;
-        titleInput.placeholder = 'Título da tarefa...';
-        titleInput.style.cssText = `
-            width: 100%;
-            font-size: 1rem;
-            border: 2px solid #ff69b4;
-            border-radius: 6px;
-            padding: 0.5rem;
-            margin-bottom: 0.5rem;
-            outline: none;
-            background: #fff;
-            color: #333;
-            font-weight: 500;
-        `;
+        titleInput.placeholder = 'Título da tarefa';
         // Criar textarea de descrição
         const descriptionTextarea = document.createElement('textarea');
         descriptionTextarea.className = 'edit-description-input';
         descriptionTextarea.value = currentDescription;
-        descriptionTextarea.placeholder = 'Descrição da tarefa (opcional)...';
-        descriptionTextarea.rows = 2;
-        descriptionTextarea.style.cssText = `
-            width: 100%;
-            font-size: 0.875rem;
-            border: 2px solid #ffb6c1;
-            border-radius: 6px;
-            padding: 0.5rem;
-            outline: none;
-            background: #fff;
-            color: #666;
-            resize: vertical;
+        descriptionTextarea.placeholder = 'Descrição da tarefa (opcional)';
+        descriptionTextarea.rows = 3;
+        // Criar container de botões
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'edit-buttons';
+        buttonContainer.style.cssText = `
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
         `;
+        // Botão Salvar
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-save';
+        saveBtn.innerHTML = '<i class="bi bi-check-circle"></i> Salvar';
+        saveBtn.setAttribute('type', 'button');
+        // Botão Cancelar
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-cancel';
+        cancelBtn.innerHTML = '<i class="bi bi-x-circle"></i> Cancelar';
+        cancelBtn.setAttribute('type', 'button');
+        buttonContainer.appendChild(saveBtn);
+        buttonContainer.appendChild(cancelBtn);
         editContainer.appendChild(titleInput);
         editContainer.appendChild(descriptionTextarea);
+        editContainer.appendChild(buttonContainer);
         // Substituir o conteúdo da tarefa pelo container de edição
+        const taskContent = taskItem.querySelector('.task-content');
         if (taskContent) {
             taskContent.style.display = 'none';
-            taskContent.parentNode?.insertBefore(editContainer, taskContent);
-            console.log('Container de edição inserido');
-        }
-        else {
-            console.error('taskContent não encontrado');
+            taskItem.insertBefore(editContainer, taskContent);
         }
         // Focar no input de título
         titleInput.focus();
         titleInput.select();
         // Eventos do container de edição
-        const handleSave = () => {
+        const handleSave = async () => {
             const newTitle = titleInput.value.trim();
             const newDescription = descriptionTextarea.value.trim();
-            console.log('Salvando edição:', { newTitle, newDescription });
-            if (newTitle && (newTitle !== currentTitle || newDescription !== currentDescription)) {
+            if (!newTitle) {
+                // Destacar o campo de título se estiver vazio
+                titleInput.style.borderColor = '#dc3545';
+                titleInput.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
+                titleInput.focus();
+                return;
+            }
+            // Adicionar estado de loading
+            saveBtn.classList.add('loading');
+            saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
+            saveBtn.disabled = true;
+            // Simular delay para feedback visual
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (newTitle) {
                 const event = new CustomEvent('editTask', {
                     detail: { taskId, title: newTitle, description: newDescription }
                 });
@@ -176,11 +151,17 @@ export class TaskUI {
             this.stopEditing();
         };
         const handleCancel = () => {
-            console.log('Cancelando edição');
-            this.stopEditing();
+            // Adicionar efeito de fade out antes de cancelar
+            editContainer.style.opacity = '0.5';
+            editContainer.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.stopEditing();
+            }, 150);
         };
-        // Eventos do input de título
-        titleInput.addEventListener('blur', handleSave);
+        // Eventos dos botões
+        saveBtn.addEventListener('click', handleSave);
+        cancelBtn.addEventListener('click', handleCancel);
+        // Eventos de teclado
         titleInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -191,23 +172,53 @@ export class TaskUI {
                 handleCancel();
             }
         });
-        // Eventos do textarea de descrição
-        descriptionTextarea.addEventListener('blur', handleSave);
         descriptionTextarea.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 e.preventDefault();
                 handleCancel();
             }
         });
+        // Eventos de input para validação em tempo real
+        titleInput.addEventListener('input', () => {
+            if (titleInput.value.trim()) {
+                titleInput.style.borderColor = '#ff69b4';
+                titleInput.style.boxShadow = '0 0 0 0.2rem rgba(255, 105, 180, 0.25)';
+            }
+        });
+        // Eventos de hover para os botões
+        saveBtn.addEventListener('mouseenter', () => {
+            if (!saveBtn.disabled) {
+                saveBtn.style.transform = 'translateY(-2px) scale(1.05)';
+                saveBtn.style.boxShadow = '0 8px 25px rgba(40, 167, 69, 0.4)';
+            }
+        });
+        saveBtn.addEventListener('mouseleave', () => {
+            if (!saveBtn.disabled) {
+                saveBtn.style.transform = 'translateY(0) scale(1)';
+                saveBtn.style.boxShadow = '0 4px 15px rgba(40, 167, 69, 0.3)';
+            }
+        });
+        cancelBtn.addEventListener('mouseenter', () => {
+            cancelBtn.style.transform = 'translateY(-2px) scale(1.05)';
+            cancelBtn.style.boxShadow = '0 8px 25px rgba(108, 117, 125, 0.4)';
+        });
+        cancelBtn.addEventListener('mouseleave', () => {
+            cancelBtn.style.transform = 'translateY(0) scale(1)';
+            cancelBtn.style.boxShadow = '0 4px 15px rgba(108, 117, 125, 0.3)';
+        });
     }
     stopEditing() {
         const editContainer = this.taskList.querySelector('.edit-container');
-        const hiddenTaskContent = this.taskList.querySelector('.task-content[style*="display: none"]');
+        const taskItem = this.taskList.querySelector('.task-item.editing');
         if (editContainer) {
             editContainer.remove();
         }
-        if (hiddenTaskContent) {
-            hiddenTaskContent.style.display = '';
+        if (taskItem) {
+            taskItem.classList.remove('editing');
+            const taskContent = taskItem.querySelector('.task-content');
+            if (taskContent) {
+                taskContent.style.display = '';
+            }
         }
         this.editingTaskId = null;
     }
@@ -273,34 +284,6 @@ export class TaskUI {
         const currentTasks = tasks.slice(startIndex, endIndex);
         // Renderizar tarefas da página atual
         this.taskList.innerHTML = currentTasks.map(task => this.createTaskElement(task)).join('');
-        // Teste: adicionar botão de teste para edição
-        if (currentTasks.length > 0) {
-            const testButton = document.createElement('button');
-            testButton.textContent = 'Testar Edição';
-            testButton.style.cssText = `
-                position: fixed;
-                top: 10px;
-                right: 10px;
-                z-index: 1000;
-                background: #ff69b4;
-                color: white;
-                border: none;
-                padding: 10px;
-                border-radius: 5px;
-                cursor: pointer;
-            `;
-            testButton.addEventListener('click', () => {
-                const firstTask = this.taskList.querySelector('.task-item');
-                if (firstTask) {
-                    const taskId = firstTask.getAttribute('data-task-id');
-                    const currentTitle = firstTask.querySelector('.task-title')?.textContent || '';
-                    const currentDescription = firstTask.querySelector('.task-description')?.textContent || '';
-                    console.log('Testando edição forçada:', { taskId, currentTitle, currentDescription });
-                    this.startEditing(taskId, currentTitle, currentDescription, firstTask);
-                }
-            });
-            document.body.appendChild(testButton);
-        }
         // Renderizar paginação
         this.renderPagination(totalPages);
     }
@@ -346,10 +329,10 @@ export class TaskUI {
         this.pagination.innerHTML = paginationHTML;
     }
     createTaskElement(task) {
-        const descriptionHtml = `
-            <div class="task-description" title="Clique duas vezes para editar">${this.escapeHtml(task.description || '')}</div>
-        `;
-        const html = `
+        const descriptionHtml = task.description ? `
+            <div class="task-description">${this.escapeHtml(task.description)}</div>
+        ` : '';
+        return `
             <li class="task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
                 <input 
                     type="checkbox" 
@@ -358,16 +341,19 @@ export class TaskUI {
                     data-task-id="${task.id}"
                 >
                 <div class="task-content">
-                    <span class="task-title" title="Clique duas vezes para editar">${this.escapeHtml(task.title)}</span>
+                    <span class="task-title">${this.escapeHtml(task.title)}</span>
                     ${descriptionHtml}
                 </div>
-                <button class="delete-btn" data-task-id="${task.id}" title="Excluir tarefa">
-                    <i class="bi bi-trash"></i>
-                </button>
+                <div class="task-actions">
+                    <button class="edit-btn" data-task-id="${task.id}" title="Editar tarefa">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="delete-btn" data-task-id="${task.id}" title="Excluir tarefa">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </li>
         `;
-        console.log('HTML gerado para tarefa:', task.id, html);
-        return html;
     }
     updatePendingCount(count) {
         this.pendingCount.innerHTML = `<i class="bi bi-clock"></i> Tarefas pendentes: ${count}`;
